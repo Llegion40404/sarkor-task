@@ -1,31 +1,32 @@
 <script setup lang="ts">
-import type { Todo } from "@/Types/Types";
-import { onBeforeMount, ref, watch } from "vue";
-import { useMainStore } from "@/stores/main";
-import Checkbox from "../components/Checkbox.vue";
 import { onBeforeRouteLeave, useRoute } from "vue-router";
-import { v4 as uid } from "uuid";
+import { onBeforeMount, ref, watch } from "vue";
 import router from "@/router/index";
+import { useMainStore } from "@/stores/main";
+import { useTodoStore } from "@/stores/todo";
 import ConfirmBox from "@/components/ConfirmBox.vue";
+import Checkbox from "../components/Checkbox.vue";
+import { v4 as uid } from "uuid";
+import type { Todo } from "@/Types/Types";
 
-const { addTodo, getSingleTodo, Save, copy, formattedDate, notify, getTodos } =
-	useMainStore();
+const { addTodo, notify, getTodos } = useMainStore();
+const { getSingleTodo, Save, copy, formattedDate, addTask } = useTodoStore();
 const route = useRoute();
 
 const isCreating = route.path.endsWith("create");
 
 const isOpen = ref(false);
-const leaving = ref(false);
-const isCreated = ref(false);
+const isLeaving = ref(false);
+const isDeleting = ref(false);
+
 const isSaved = ref(true);
 const isReverting = ref(false);
-const isDeleting = ref(false);
+const isCreated = ref(false);
 const confirmLeaving = ref(false);
 
 const taskTitle = ref("");
 
 let todo = ref<Todo>({
-	completedAt: "",
 	createdAt: "",
 	id: uid(),
 	list: [],
@@ -34,46 +35,33 @@ let todo = ref<Todo>({
 let initTodo: Todo;
 let currTodo: Todo;
 
-const leave = () => {
+function leave() {
 	confirmLeaving.value = true;
 	router.push({ path: "/" });
-};
+}
+function newTask() {
+	addTask(todo.value, taskTitle.value);
+	isOpen.value = false;
+	taskTitle.value = "";
+}
 
 function onAdd() {
 	if (todo.value.title.trim().length > 0) {
 		if (isCreating) {
+			isCreated.value = true;
 			todo.value.createdAt = formattedDate();
 			addTodo(todo.value);
-			isCreated.value = true;
-			router.push({ path: "/" });
 			notify("Successfully added new todo!");
+			router.push({ path: "/" });
 		} else {
 			initTodo = todo.value;
-			notify("Saved changes!");
 			isSaved.value = true;
+			notify("Saved changes!");
 			Save();
 		}
-	} else {
-	}
+	} else notify("Enter a valid title!", "error");
 }
-function addTask() {
-	const task = {
-		title: taskTitle.value.trim(),
-		id: uid(),
-		isDone: false,
-		createdAt: formattedDate(),
-		doneAt: "",
-	};
-	if (todo.value.list.length < 15) {
-		if (taskTitle.value.length > 0) {
-			todo.value.list.push(task);
-			isOpen.value = false;
-			taskTitle.value = "";
-		} else notify("Give a name to yor task!", "warning");
-	} else {
-		notify("Limit of 15 tasks reached!", "warning");
-	}
-}
+
 function revert() {
 	isReverting.value = true;
 	if (initTodo && initTodo.title) {
@@ -104,7 +92,7 @@ onBeforeRouteLeave(() => {
 	if (isCreated.value || isSaved.value) {
 		return true;
 	} else {
-		leaving.value = !leaving.value;
+		isLeaving.value = !isLeaving.value;
 		if (confirmLeaving.value) {
 			return true;
 		}
@@ -126,8 +114,8 @@ onBeforeMount(() => {
 		<el-dialog v-model="isOpen">
 			<template #header>Add a new task</template>
 			<div class="flex gap-5 my-3">
-				<el-input clearable v-model="taskTitle" />
-				<el-button type="success" @click="addTask">Add</el-button>
+				<el-input class="!text-lg" clearable v-model="taskTitle" />
+				<el-button type="success" @click="newTask">Add</el-button>
 			</div>
 		</el-dialog>
 		<ConfirmBox
@@ -194,10 +182,10 @@ onBeforeMount(() => {
 				<el-button native-type="submit" type="success">Save</el-button>
 			</div>
 		</form>
-		<el-dialog v-model="leaving">
+		<el-dialog v-model="isLeaving">
 			<template #header>Changes won't save!</template>
 			<div class="flex gap-5 my-3">
-				<el-button type="success" @click="leaving = false">Stay</el-button>
+				<el-button type="success" @click="isLeaving = false">Stay</el-button>
 				<el-button type="danger" @click="leave">Leave</el-button>
 			</div>
 		</el-dialog>

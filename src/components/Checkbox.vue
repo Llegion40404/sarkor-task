@@ -33,7 +33,7 @@ const isOpen = ref( false )
 		<div v-if="!home">
 			<el-button size="default" @click="isOpen=!isOpen" type=danger class="ml-5 mt-2" :icon="Delete"></el-button>
 		</div>
-		<ConfirmBox @close="isOpen=!isOpen" v-show="isOpen" :todo="todo!" :task="task"/>
+		<ConfirmBox @close="isOpen=!isOpen" v-show="isOpen" :todo="todo!" :task="task" :isTodo="false"/>
 	</p>
 
 	</template>
