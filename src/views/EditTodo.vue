@@ -8,6 +8,7 @@ import ConfirmBox from "@/components/ConfirmBox.vue";
 import Checkbox from "../components/Checkbox.vue";
 import { v4 as uid } from "uuid";
 import type { Todo } from "@/Types/Types";
+import { ArrowLeft } from "@element-plus/icons-vue";
 
 const { addTodo, notify, getTodos } = useMainStore();
 const { getSingleTodo, Save, copy, formattedDate, addTask } = useTodoStore();
@@ -114,6 +115,9 @@ onMounted(() => {
 
 <template>
 	<div class="bg-zinc-600 rounded p-5">
+		<el-button tag="router-link" type="info" class="absolute left-10" to="/"
+			><el-icon class="mr-1"><ArrowLeft /></el-icon>Back</el-button
+		>
 		<el-dialog @opened="taskInput?.focus()" v-model="isOpen">
 			<template #header>Add a new task</template>
 			<div class="flex gap-5 my-3">
