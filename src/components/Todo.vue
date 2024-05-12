@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import type { Todo } from "@/Types/Todo";
+import type { Todo } from "@/Types/Types";
 import Checkbox from "./Checkbox.vue";
 import { computed, ref } from "vue";
-import ConfirmBox from "./ConfirmBox.vue";
-import { useMainStore } from "@/stores/main";
 import { Delete, Edit } from "@element-plus/icons-vue";
+import ConfirmBox from "./ConfirmBox.vue";
 
 const props = defineProps<{ todo: Todo }>();
-const isDeleteOpen = ref(false);
-const { toggleOverlay } = useMainStore();
-const toggleVis = () => {
-	isDeleteOpen.value = !isDeleteOpen.value;
-	toggleOverlay();
-};
-
+const isOpen = ref(false);
 const rest = computed(() =>
 	props.todo.list.length > 3 ? props.todo.list.length - 3 + " task(s) more" : ""
 );
@@ -21,19 +14,17 @@ const rest = computed(() =>
 
 <template>
 	<div>
-		<ConfirmBox @close="toggleVis" v-if="isDeleteOpen" :todo="todo" />
+		<ConfirmBox v-if="isOpen" @close="isOpen = !isOpen" :todo="todo" />
 		<article class="bg-zinc-500 p-5 pb-2 relative rounded flexCol">
 			<div class="flex gap-5 absolute top-3 right-5">
-				<RouterLink :to="{ path: `/edit/${todo.id}` }"
+				<RouterLink :to="`/edit/${todo.id}`"
 					><el-button size="default" type="warning" :icon="Edit"></el-button>
 				</RouterLink>
-
 				<el-button
 					size="default"
-					@click="toggleVis"
+					@click="isOpen = !isOpen"
 					:icon="Delete"
-					type="danger">
-				</el-button>
+					type="danger"></el-button>
 			</div>
 			<h2 class="text-3xl">{{ todo.title }}</h2>
 			<section v-if="todo.list.length > 0" class="flexCol gap-2 py-5 border-t">

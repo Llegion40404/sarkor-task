@@ -1,68 +1,44 @@
 <script setup lang="ts">
-import type { Task, Todo } from "@/Types/Todo";
-import router from "@/router/index";
+import type { Task, Todo } from "@/Types/Types";
 import { useMainStore } from "@/stores/main";
-import { useRoute } from "vue-router";
 
-const props = defineProps<{ todo?: Todo; task?: Task }>();
+const props = defineProps<{
+	todo: Todo;
+	task?: Task;
+	isTodo?: boolean;
+}>();
 const emit = defineEmits(["close"]);
-const route = useRoute();
-const { deleteTodo, deleteTask } = useMainStore();
-
-const onDelete = () => {
-	if (props.todo) {
-		deleteTodo(props?.todo?.id!);
-		emit("close");
-		if (route.path !== "/") router.push("/");
-	} else {
-		deleteTask(route?.params?.id, props.task?.id!);
-		emit("close");
-	}
-};
+const visible = true;
+const { deleteTask, deleteTodo } = useMainStore();
 </script>
 <template>
-	<section>
-		<div class="bg-zinc-800 p-5 rounded-md center z-20">
-			<slot>
-				<div v-if="todo" class="w-auto flex flex-col justify-between gap-5">
-					<div class="flex flex-col gap-2">
-						<h4>
-							You are going to delete todo:
-							<span class="text-2xl text-orange-500">"{{ todo?.title }}"</span>
-						</h4>
-
-						<p>
-							With
-							<span class="text-green-500">{{ todo?.list.length }}</span>
-							tasks
-						</p>
-						<p>Create at: {{ todo?.createdAt }}</p>
-						<div class="flex justify-between mt-3">
-							<el-button @click="emit('close')" type="success"
-								>Cancel</el-button
-							>
-							<el-button @click="onDelete" type="danger">Delete</el-button>
-						</div>
-					</div>
-				</div>
-
-				<div v-else>
-					<h4>
-						{{
-							task?.isDone
-								? `Delete "` + task?.text + `"?`
-								: `Task "` + task?.text + `" is not completed!`
-						}}
-					</h4>
-					<p class="text-base text-gray-400 my-3">
-						Was created at: {{ task?.createdAt }}
-					</p>
-					<div class="relative flex justify-between mt-5">
-						<el-button @click="emit('close')" type="success">Cancel</el-button>
-						<el-button @click="onDelete" type="danger">Delete</el-button>
-					</div>
-				</div>
-			</slot>
-		</div>
-	</section>
+	<div>
+		<el-dialog v-model="visible">
+			<template #header>
+				<p class="text-2xl">
+					You're about to delete {{ !task ? "todo" : "task" }}
+					<span class="text-orange-400">"{{ task?.title ?? todo.title }}"</span>
+				</p>
+			</template>
+			<p
+				class="text-white text-base"
+				v-if="todo?.list && todo?.list.length > 0">
+				With <span class="text-green-500">{{ todo?.list.length }}</span>
+				task(s)
+			</p>
+			<p class="text-zinc-300">Was created: {{ todo?.createdAt || "now" }}</p>
+			<template #footer>
+				<el-button type="success" @click="emit('close')">Cancel</el-button>
+				<el-button v-if="todo" type="danger" @click="deleteTodo(todo.id)"
+					>Delete</el-button
+				>
+				<el-button
+					v-else
+					type="danger"
+					@click="deleteTask((todo! as Todo)?.id, task?.id!)"
+					>Delete</el-button
+				>
+			</template>
+		</el-dialog>
+	</div>
 </template>

@@ -5,9 +5,10 @@ import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 
 const { todos } = storeToRefs(useMainStore());
+const { getTodos } = useMainStore();
 
 onMounted(() => {
-	todos.value = JSON.parse(localStorage.getItem("todos")!);
+	getTodos();
 });
 </script>
 
@@ -21,8 +22,10 @@ onMounted(() => {
 		<article class="text-center text-3xl mx-auto w-1/3 p-10" v-else>
 			Uh oh...
 			<p>No todos!</p>
-			<RouterLink to="/create" class="btnGreen inline-block mt-10 p-5"
-				>Create one!</RouterLink
+			<RouterLink to="/create"
+				><el-button type="success" class="!text-2xl !p-8 mt-10"
+					>Create one!</el-button
+				></RouterLink
 			>
 		</article>
 	</main>

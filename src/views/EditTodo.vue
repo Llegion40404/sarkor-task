@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import type { Task, Todo } from "@/Types/Todo";
-import { onMounted, ref } from "vue";
+import type { Todo } from "@/Types/Types";
+import { onBeforeMount, ref, watch } from "vue";
 import { useMainStore } from "@/stores/main";
 import Checkbox from "../components/Checkbox.vue";
 import { onBeforeRouteLeave, useRoute } from "vue-router";
 import { v4 as uid } from "uuid";
 import router from "@/router/index";
 import ConfirmBox from "@/components/ConfirmBox.vue";
-import { Close } from "@element-plus/icons-vue";
 
-const { addTodo, getSingleTodo, Save, toggleOverlay, copy, formattedDate } =
+const { addTodo, getSingleTodo, Save, copy, formattedDate, notify, getTodos } =
 	useMainStore();
 const route = useRoute();
 
@@ -17,6 +16,9 @@ const isCreating = route.path.endsWith("create");
 
 const isOpen = ref(false);
 const leaving = ref(false);
+const isCreated = ref(false);
+const isSaved = ref(true);
+const isReverting = ref(false);
 const isDeleting = ref(false);
 const confirmLeaving = ref(false);
 
@@ -25,29 +27,16 @@ const taskTitle = ref("");
 let todo = ref<Todo>({
 	completedAt: "",
 	createdAt: "",
-	id: "",
+	id: uid(),
 	list: [],
 	title: "",
 });
 let initTodo: Todo;
 let currTodo: Todo;
 
-const toggleVis = () => {
-	isOpen.value = !isOpen.value;
-	toggleOverlay();
-};
-const isLeaving = () => {
-	leaving.value = !leaving.value;
-	toggleOverlay();
-};
-const toggleDelete = () => {
-	isDeleting.value = !isDeleting.value;
-	toggleOverlay();
-};
 const leave = () => {
 	confirmLeaving.value = true;
-	toggleOverlay();
-	router.push("/");
+	router.push({ path: "/" });
 };
 
 function onAdd() {
@@ -55,9 +44,13 @@ function onAdd() {
 		if (isCreating) {
 			todo.value.createdAt = formattedDate();
 			addTodo(todo.value);
-			router.push("/");
+			isCreated.value = true;
+			router.push({ path: "/" });
+			notify("Successfully added new todo!");
 		} else {
 			initTodo = todo.value;
+			notify("Saved changes!");
+			isSaved.value = true;
 			Save();
 		}
 	} else {
@@ -65,47 +58,82 @@ function onAdd() {
 }
 function addTask() {
 	const task = {
-		text: taskTitle.value.trim(),
+		title: taskTitle.value.trim(),
 		id: uid(),
 		isDone: false,
 		createdAt: formattedDate(),
 		doneAt: "",
 	};
-	if (todo.value.list.length < 15 && taskTitle.value.length > 0) {
-		todo.value.list.push(task);
-		toggleVis();
-		taskTitle.value = "";
+	if (todo.value.list.length < 15) {
+		if (taskTitle.value.length > 0) {
+			todo.value.list.push(task);
+			isOpen.value = false;
+			taskTitle.value = "";
+		} else notify("Give a name to yor task!", "warning");
+	} else {
+		notify("Limit of 15 tasks reached!", "warning");
 	}
 }
-
 function revert() {
-	currTodo = copy(todo.value);
-	todo.value = copy(initTodo);
+	isReverting.value = true;
+	if (initTodo && initTodo.title) {
+		todo.value = copy(initTodo);
+		notify("Rolled back to last save!");
+	} else notify("No saves yet!", "warning");
+	isReverting.value = false;
 }
 function currentState() {
-	todo.value = copy(currTodo);
+	if (currTodo) {
+		todo.value = copy(currTodo);
+		notify("Last unsaved changes returned");
+	} else notify("No saves yet!", "warning");
 }
 
-onMounted(() => {
-	if (!isCreating) {
-		todo.value = getSingleTodo(route?.params?.id)!;
-		initTodo = copy(todo.value);
+watch(
+	todo,
+	(newTodo, oldTodo) => {
+		if (!isReverting.value) {
+			currTodo = copy(newTodo);
+		}
+		if (newTodo == oldTodo) isSaved.value = false;
+	},
+	{ deep: true }
+);
+
+onBeforeRouteLeave(() => {
+	if (isCreated.value || isSaved.value) {
+		return true;
+	} else {
+		leaving.value = !leaving.value;
+		if (confirmLeaving.value) {
+			return true;
+		}
+		return false;
 	}
 });
 
-onBeforeRouteLeave(() => {
-	isLeaving();
-	if (confirmLeaving.value) {
-		toggleOverlay();
-		return true;
+onBeforeMount(() => {
+	if (!isCreating) {
+		getTodos();
+		todo.value = getSingleTodo(route?.params?.id as string)!;
+		initTodo = copy(todo.value);
 	}
-	return false;
 });
 </script>
 
 <template>
 	<div class="bg-zinc-600 rounded p-5">
-		<ConfirmBox v-if="isDeleting" :todo="todo" @close="toggleDelete" />
+		<el-dialog v-model="isOpen">
+			<template #header>Add a new task</template>
+			<div class="flex gap-5 my-3">
+				<el-input clearable v-model="taskTitle" />
+				<el-button type="success" @click="addTask">Add</el-button>
+			</div>
+		</el-dialog>
+		<ConfirmBox
+			v-if="isDeleting"
+			@close="isDeleting = !isDeleting"
+			:todo="todo" />
 		<div class="flex justify-between">
 			<h1 class="text-2xl">
 				{{ isCreating ? "Create a new todo" : "Change existing todo" }}
@@ -125,7 +153,9 @@ onBeforeRouteLeave(() => {
 						>Current state</el-button
 					>
 				</el-tooltip>
-				<el-button @click="toggleDelete" type="danger">Delete</el-button>
+				<el-button @click="isDeleting = !isDeleting" type="danger"
+					>Delete</el-button
+				>
 			</div>
 		</div>
 		<form id="form" @submit.prevent="onAdd" class="mt-3 flexCol gap-5 relative">
@@ -147,34 +177,29 @@ onBeforeRouteLeave(() => {
 				<div
 					v-if="todo.list.length > 0"
 					class="flexCol flex-wrap max-h-[30vh] gap-4">
-					<Checkbox v-for="task in todo.list" :key="task.id" :task="task" />
+					<Checkbox
+						v-for="task in todo.list"
+						:key="task.id"
+						:task="task"
+						:todo="todo" />
 				</div>
-				<el-button type="warning" @click="toggleVis" class="w-max">
+				<el-button type="warning" @click="isOpen = !isOpen" class="w-max">
 					Add task
 				</el-button>
-				<div
-					v-show="isOpen"
-					class="flex items-center gap-3 absolute top-0 left-1/3 bg-zinc-800 rounded-md z-20 p-10 pt-14">
-					<el-icon :size="30" class="!absolute top-3 right-3" @click="toggleVis"
-						><Close
-					/></el-icon>
-					<el-input clearable v-model="taskTitle" />
-					<el-button type="success" @click="addTask">Add</el-button>
-				</div>
 			</section>
 			<div class="flex justify-between">
-				<RouterLink to="/ "
+				<RouterLink to="/"
 					><el-button type="danger">Cancel</el-button></RouterLink
 				>
-				<el-button @click="onAdd" type="success">Save</el-button>
+				<el-button native-type="submit" type="success">Save</el-button>
 			</div>
 		</form>
-		<ConfirmBox v-if="leaving">
-			<p class="text-2xl">Changes won't save!</p>
-			<div class="relative flex justify-between mt-5">
-				<el-button type="success" @click="isLeaving">Stay</el-button>
+		<el-dialog v-model="leaving">
+			<template #header>Changes won't save!</template>
+			<div class="flex gap-5 my-3">
+				<el-button type="success" @click="leaving = false">Stay</el-button>
 				<el-button type="danger" @click="leave">Leave</el-button>
 			</div>
-		</ConfirmBox>
+		</el-dialog>
 	</div>
 </template>

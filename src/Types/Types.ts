@@ -5,9 +5,8 @@ export type Todo = {
 	createdAt: string;
 	completedAt: string;
 };
-
 export type Task = {
-	text: string;
+	title: string;
 	isDone: boolean;
 	id: string;
 	createdAt: string;

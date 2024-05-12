@@ -35,6 +35,10 @@
 .el-button {
 	font-weight: 700 !important;
 }
+.el-dialog {
+	background-color: rgb(78, 78, 78) !important;
+	width: max-content !important;
+}
 i {
 	cursor: pointer;
 }
