@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeRouteLeave, useRoute } from "vue-router";
-import { onBeforeMount, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import router from "@/router/index";
 import { useMainStore } from "@/stores/main";
 import { useTodoStore } from "@/stores/todo";
@@ -14,11 +14,12 @@ const { getSingleTodo, Save, copy, formattedDate, addTask } = useTodoStore();
 const route = useRoute();
 
 const isCreating = route.path.endsWith("create");
-
+const taskInput = ref(null! as HTMLInputElement);
+// modals
 const isOpen = ref(false);
 const isLeaving = ref(false);
 const isDeleting = ref(false);
-
+// conditions
 const isSaved = ref(true);
 const isReverting = ref(false);
 const isCreated = ref(false);
@@ -44,7 +45,7 @@ function newTask() {
 	isOpen.value = false;
 	taskTitle.value = "";
 }
-
+// create or save a new todo
 function onAdd() {
 	if (todo.value.title.trim().length > 0) {
 		if (isCreating) {
@@ -77,6 +78,7 @@ function currentState() {
 	} else notify("No saves yet!", "warning");
 }
 
+// tracking current changes
 watch(
 	todo,
 	(newTodo, oldTodo) => {
@@ -88,6 +90,7 @@ watch(
 	{ deep: true }
 );
 
+// to leave or no that is the qeustion
 onBeforeRouteLeave(() => {
 	if (isCreated.value || isSaved.value) {
 		return true;
@@ -100,7 +103,7 @@ onBeforeRouteLeave(() => {
 	}
 });
 
-onBeforeMount(() => {
+onMounted(() => {
 	if (!isCreating) {
 		getTodos();
 		todo.value = getSingleTodo(route?.params?.id as string)!;
@@ -111,10 +114,14 @@ onBeforeMount(() => {
 
 <template>
 	<div class="bg-zinc-600 rounded p-5">
-		<el-dialog v-model="isOpen">
+		<el-dialog @opened="taskInput?.focus()" v-model="isOpen">
 			<template #header>Add a new task</template>
 			<div class="flex gap-5 my-3">
-				<el-input class="!text-lg" clearable v-model="taskTitle" />
+				<el-input
+					ref="taskInput"
+					class="!text-lg"
+					clearable
+					v-model="taskTitle" />
 				<el-button type="success" @click="newTask">Add</el-button>
 			</div>
 		</el-dialog>

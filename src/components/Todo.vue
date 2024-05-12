@@ -7,6 +7,7 @@ import ConfirmBox from "./ConfirmBox.vue";
 
 const props = defineProps<{ todo: Todo }>();
 const isOpen = ref(false);
+const slicedTodos = props.todo.list.slice(0, 3);
 const rest = computed(() =>
 	props.todo.list.length > 3 ? props.todo.list.length - 3 + " task(s) more" : ""
 );
@@ -30,7 +31,7 @@ const rest = computed(() =>
 			<section v-if="todo.list.length > 0" class="flexCol gap-2 py-5 border-t">
 				<h3 class="text-lg">Tasks:</h3>
 				<Checkbox
-					v-for="(task, idx) in todo.list.slice(0, 3)"
+					v-for="(task, idx) in slicedTodos"
 					:home="true"
 					:task="task"
 					:idx="idx"

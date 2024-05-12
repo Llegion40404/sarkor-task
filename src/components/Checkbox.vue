@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Task, Todo } from "@/Types/Types";
 import { ref } from "vue";
-import { Delete } from "@element-plus/icons-vue";
+import { CloseBold, Delete, Select } from "@element-plus/icons-vue";
 import ConfirmBox from "./ConfirmBox.vue";
 
 const props = defineProps<{
@@ -14,7 +14,7 @@ const props = defineProps<{
 const isOpen = ref( false )
 
 </script>
-
+<!-- *for some reason prettier didnt work here -->
 <template>
 	<p class="flex" >
 		<p class="flex text-xl items-center">
@@ -24,10 +24,10 @@ const isOpen = ref( false )
 			type="checkbox"
 			v-model="task.isDone"
 			:name="task.title" />
-			<span v-if="home"> {{ idx! + 1 }}.  </span>
-			<div class="ml-3"v-if="home" >
-				<i class="fa-solid text-base" :class="task.isDone?'fa-check text-green-600':'fa-xmark text-rose-600'"></i>
-			</div>
+			<div class="flex" v-if="home" >
+			<component class="w-5 mr-2 mt-1" :class="task.isDone?'text-green-500':'text-red-500'" :is="task.isDone ? Select : CloseBold"></component>
+			<span> {{ idx! + 1 }}.  </span>
+		</div>
 			<input required type="text" v-model="task.title" :disabled="home" class="bg-transparent ml-2" :class="!home?'border-b-2 p-1 px-3 border-sky-500':''">
 		</p>
 		<div v-if="!home">
@@ -35,5 +35,4 @@ const isOpen = ref( false )
 		</div>
 		<ConfirmBox @close="isOpen=!isOpen" v-show="isOpen" :todo="todo!" :task="task" :isTodo="false"/>
 	</p>
-
 	</template>

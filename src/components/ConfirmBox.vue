@@ -23,7 +23,9 @@ const { deleteTask } = useTodoStore();
 			<template #header>
 				<p class="text-2xl">
 					You're about to delete {{ !task ? "todo" : "task" }}
-					<span class="text-orange-400">"{{ task?.title ?? todo.title }}"</span>
+					<span class="text-orange-400"
+						>"{{ task?.title ?? todo?.title }}"</span
+					>
 				</p>
 			</template>
 			<p class="text-white text-base" v-if="isTodo">
