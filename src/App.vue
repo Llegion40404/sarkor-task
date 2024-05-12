@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowLeft } from "@element-plus/icons-vue";
 import { useRoute } from "vue-router";
 
 const route = useRoute();
@@ -19,6 +20,9 @@ window.onbeforeunload = function () {
 			</div>
 		</nav>
 		<section class="container py-5">
+			<el-button tag="router-link" type="info" class="absolute left-10" to="/"
+				><el-icon class="mr-1"><ArrowLeft /></el-icon>Back</el-button
+			>
 			<RouterView :key="route.path" />
 		</section>
 	</main>
